@@ -1,0 +1,17 @@
+name: Liquor Radar Sync
+on:
+  schedule:
+    # Runs at 15:30 UTC (approx 8:30 AM Portland time) every day
+    - cron: '30 15 * * *'
+  workflow_dispatch: # Allows you to trigger it manually for "Emergencies"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Scan
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python scanner.py
