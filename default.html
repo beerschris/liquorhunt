@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCARS | Liquor Radar</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --lcars-orange: #ff9900;
+            --lcars-purple: #cc99cc;
+            --lcars-blue: #99ccff;
+            --lcars-bg: #000;
+        }
+        body {
+            background-color: var(--lcars-bg);
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-transform: uppercase;
+        }
+        /* LCARS Elbow Header */
+        .header {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 30px;
+        }
+        .elbow {
+            width: 100px;
+            height: 60px;
+            background: var(--lcars-purple);
+            border-radius: 0 0 0 30px;
+            margin-right: 10px;
+        }
+        .bar {
+            flex-grow: 1;
+            height: 30px;
+            background: var(--lcars-purple);
+            margin-bottom: 0;
+        }
+        .title {
+            font-size: 24px;
+            padding-left: 20px;
+            color: var(--lcars-purple);
+            letter-spacing: 2px;
+        }
+        /* Data Grid */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .card {
+            border-left: 15px solid var(--lcars-orange);
+            background: #111;
+            padding: 15px;
+            border-radius: 0 10px 10px 0;
+            position: relative;
+        }
+        .card.tequila { border-color: var(--lcars-purple); }
+        .card.bourbon { border-color: var(--lcars-orange); }
+        
+        .product-name { font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .store-info { color: #aaa; font-size: 0.8em; }
+        .stock-badge {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 1.2em;
+            color: var(--lcars-blue);
+        }
+        .scan-line { font-size: 0.7em; color: #444; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="elbow"></div>
+        <div class="bar"></div>
+        <div class="title">Sector 503: Liquor Radar</div>
+    </div>
+
+    <div id="radar-output" class="inventory-grid">
+        <p>Initializing sensor sweep...</p>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function fetchRadar() {
+            const { data, error } = await supabase
+                .from('liquor_inventory')
+                .select('*')
+                .gt('quantity', 0) // Only show items in stock
+                .order('last_updated', { ascending: false });
+
+            const output = document.getElementById('radar-output');
+            
+            if (error) {
+                output.innerHTML = `<div class="card">ERROR: SENSORS OFFLINE</div>`;
+                return;
+            }
+
+            output.innerHTML = data.map(item => `
+                <div class="card ${item.category.toLowerCase()}">
+                    <div class="product-name">${item.product_name}</div>
+                    <div class="store-info">${item.store_name} (Store #${item.store_id})</div>
+                    <div class="stock-badge">${item.quantity} UNITS</div>
+                    <div class="scan-line">LAST DETECTED: ${new Date(item.last_updated).toLocaleString()}</div>
+                </div>
+            `).join('');
+        }
+
+        fetchRadar();
+        // Refresh every 5 minutes while page is open
+        setInterval(fetchRadar, 300000);
+    </script>
+</body>
+</html>
